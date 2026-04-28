@@ -1,21 +1,4 @@
-"""
-PSO.py — Tối ưu tham số động máy phát điện
-============================================
-Kiến trúc theo PSO_ver2.py, toàn bộ config đọc từ dict input_data
-của GUI.get_all_inputs() — không dùng file JSON ngoài.
 
-Luồng chính:
-  run_optimization(input_data, log_cb)
-      ├─ _build_var_list()        : flatten tham số từ gen/avr/gov/pss_model
-      ├─ _read_ref_csv()          : đọc file CSV tham chiếu
-      ├─ _run_PSO()               : PSO 2 giai đoạn + multi-restart (pyswarms)
-      ├─ _refine()                : Nelder-Mead tinh chỉnh
-      └─ _plot() / _save_result() : vẽ đồ thị & lưu CSV kết quả
-
-Tích hợp GUI:
-  from PSO import run_optimization
-  result = run_optimization(self.get_all_inputs(), log_cb=self.log_output.append)
-"""
 
 import re
 import os
@@ -61,8 +44,8 @@ _GUI_TO_CHANNEL = {
 def _channel_pattern(channel_key: str, bus_id: str, gen_id: str) -> str:
     if channel_key in ("FREQ", "VOLT"):
         return rf"^{channel_key}\s*{bus_id}\s*\[.*\]$"
-    elif channel_key in ("ETRM", "EFD", "XADIFD"):
-        return rf"^{channel_key}\s+BUS\s+{bus_id}\s+MACHINE\s+'{gen_id}\s*'$"
+    # elif channel_key in ("ETRM", "EFD", "XADIFD"):
+    #     return rf"^{channel_key}\s+BUS\s+{bus_id}\s+MACHINE\s+'{gen_id}\s*'$"
     else:
         return rf"^{channel_key}\s*{bus_id}\[.*\]{gen_id}$"
 
@@ -70,10 +53,6 @@ def _channel_pattern(channel_key: str, bus_id: str, gen_id: str) -> str:
 
 
 def _init_PSSE(paths: dict, psse_setting: dict) -> None:
-    """
-    Nạp case, giải trào lưu, convert tải, nạp dynamic, cấu hình channel.
-    Gọi lại trước mỗi lần mô phỏng để reset trạng thái.
-    """
     sav_file = paths["sav_file"]
     dyr_file = paths["dyr_file"]
     delt     = float(psse_setting.get("delt", 0.01))
@@ -116,7 +95,6 @@ def _init_PSSE(paths: dict, psse_setting: dict) -> None:
     psspy.report_output(6, "", 0)
 def _change_param(param_dict: dict, var_spec: list, psse_setting: dict) -> None:
     """
-    Áp bộ tham số vào PSS/E.
     param_dict : {param_name: value}
     var_spec   : list of {param_name, model_name, idx}
     """
@@ -349,7 +327,6 @@ def _save_result(result: dict, out_file: str) -> None:
     out_dir   = os.path.dirname(out_file) or "."
     base_name = os.path.splitext(os.path.basename(out_file))[0]
 
-    # Bảng tham số tối ưu
     pd.DataFrame([
         {"parameter": k, "optimal_value": v}
         for k, v in result["best_params"].items()
@@ -445,7 +422,6 @@ def run_optimization(
                 log(f"    [WARN PSO] {e}")
                 costs.append(1e9)
         return np.array(costs)
-    log("\n[3/4] Chạy PSO (1 lần)...")
     t0 = time.time()
     best_pso, best_sse, cost_history = _run_PSO(obj_PSO, lb, ub, warm_start, pso_params, log)
     log(f"  PSO xong trong {time.time() - t0:.1f}s")
