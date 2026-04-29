@@ -683,7 +683,7 @@ class Ui_MainWindow(object):
         dist_row.addWidget(self._lbl("Loại nhiễu loạn:"))
         self.disturbance = QtWidgets.QComboBox()
         self.disturbance.setObjectName("disturbance")
-        self.disturbance.addItems(["No load", "Step response", "Impulse"])
+        self.disturbance.addItems(["No load", "step response", "impulse"])
         dist_row.addWidget(self.disturbance)
         dist_row.addStretch()
         rf.addLayout(dist_row)
